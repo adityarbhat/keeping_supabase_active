@@ -1,0 +1,32 @@
+name: Keep Supabase Active
+
+on:
+  schedule:
+    # Runs every 5 days at 10:00 AM UTC
+    - cron: '0 10 */5 * *'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Ping Supabase
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      run: |
+        response=$(curl -s -w "\n%{http_code}" -X GET \
+          "${SUPABASE_URL}/rest/v1/" \
+          -H "apikey: ${SUPABASE_KEY}" \
+          -H "Authorization: Bearer ${SUPABASE_KEY}")
+        
+        http_code=$(echo "$response" | tail -n1)
+        echo "HTTP Status: $http_code"
+        
+        if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 404 ]; then
+          echo "✅ Successfully pinged Supabase"
+        else
+          echo "❌ Failed to ping Supabase"
+          exit 1
+        fi
